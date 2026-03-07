@@ -1,0 +1,53 @@
+package config
+
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/spf13/viper"
+)
+
+type Config struct {
+	Addr     string `mapstructure:"addr"`
+	DoImport string `mapstructure:"do_import"`
+	DBpath   string `mapstructure:"db_path"`
+	Redis    Redis  `mapstructure:"redis"`
+}
+
+type Redis struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Addr    string `mapstructure:"addr"`
+}
+
+func LoadConfig(path string) (*Config, error) {
+	v := viper.New()
+
+	v.SetConfigFile(path)
+
+	v.SetEnvPrefix("APP")
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	v.SetDefault("app.addr", "localhost:8080")
+	v.SetDefault("app.do_import", false)
+	v.SetDefault("app.db_path", "storage/database.db")
+	v.SetDefault("app.redis.enabled", false)
+	v.SetDefault("app.redis.addr", "localhost:7079")
+
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, fmt.Errorf("fatal error reading config file: %w", err)
+		}
+
+		log.Printf("failed found config file, use default values")
+	}
+
+	var cfg Config
+
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed parse config to struct")
+	}
+
+	return &cfg, nil
+}
