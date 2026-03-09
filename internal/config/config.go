@@ -10,14 +10,19 @@ import (
 
 type Config struct {
 	Addr     string `mapstructure:"addr"`
-	DoImport string `mapstructure:"do_import"`
 	DBpath   string `mapstructure:"db_path"`
 	Redis    Redis  `mapstructure:"redis"`
+	Importer Importer `mapstrcucture:"import"`
 }
 
 type Redis struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Addr    string `mapstructure:"addr"`
+}
+
+type Importer struct {
+	Enabled bool   `mapstructure:"enabled"`
+	File    string `mapstructure:"file"`
 }
 
 func LoadConfig(path string) (*Config, error) {
