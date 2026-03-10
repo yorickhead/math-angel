@@ -32,7 +32,7 @@ func (s *Service) CreateTask(
 	desc string,
 	decision string,
 	rightAnswer string,
-	level uint,
+	level string,
 ) error {
 	task := model.NewTask(
 		taskType,
