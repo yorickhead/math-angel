@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/osamikoyo/math-angel/internal/model"
 	"github.com/osamikoyo/math-angel/pkg/logger"
 	"go.uber.org/zap"
@@ -14,6 +16,7 @@ var (
 	ErrEmptyTask    = errors.New("empty task")
 	ErrAlreadyExist = errors.New("task already exist")
 	ErrUnknown      = errors.New("unknown error")
+	ErrNotFound     = errors.New("not found")
 )
 
 type Repository struct {
@@ -48,6 +51,31 @@ func (r *Repository) CreateTask(ctx context.Context, task *model.Task) error {
 
 	r.logger.Info("task created successfully",
 		zap.Any("task", task))
+
+	return nil
+}
+
+func (r *Repository) UpdateTask(ctx context.Context, id uuid.UUID, column string, value any) error {
+	rows, err := gorm.G[model.Task](r.db).Update(ctx, column, value)
+	if rows == 0 {
+		r.logger.Error("not found task",
+			zap.String("id", id.String()))
+
+		return ErrNotFound
+	}
+
+	if err != nil {
+		r.logger.Error("failed update task",
+			zap.String("column", column),
+			zap.Any("value", value),
+			zap.Error(err))
+
+		return fmt.Errorf("failed update task: %w", err)
+	}
+
+	r.logger.Info("task updated successfully",
+		zap.String("id", id.String()),
+		zap.String("column", column))
 
 	return nil
 }
