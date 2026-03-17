@@ -1,0 +1,24 @@
+package handler
+
+import (
+	"github.com/labstack/echo/v5"
+	"github.com/osamikoyo/math-angel/internal/service"
+)
+
+type Handler struct {
+	service *service.Service
+}
+
+func (h *Handler) NewHandler(service *service.Service) *Handler {
+	return &Handler{
+		service: service,
+	}
+}
+
+func (h *Handler) RegisterRouters(e *echo.Echo) {
+	e.GET("/healthcheck", h.HealthCheck)
+
+	taskGroup := e.Group("/task")
+
+	taskGroup.GET("/get/random/:type/level/:level", h.GetRandomTask)
+}
