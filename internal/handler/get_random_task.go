@@ -23,5 +23,3 @@ func (h *Handler) GetRandomTask(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, task)
 }
-
-
