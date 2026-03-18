@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	Addr     string `mapstructure:"addr"`
-	DBpath   string `mapstructure:"db_path"`
-	Redis    Redis  `mapstructure:"redis"`
+	Addr     string   `mapstructure:"addr"`
+	DBpath   string   `mapstructure:"db_path"`
+	Redis    Redis    `mapstructure:"redis"`
 	Importer Importer `mapstrcucture:"import"`
 }
 
