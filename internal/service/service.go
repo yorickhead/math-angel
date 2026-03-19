@@ -183,6 +183,35 @@ func (s *Service) GetRandomTask(reqCtx context.Context, taskType string, level u
 	return &task, nil
 }
 
+func (s *Service) GetBests(reqCtx context.Context, taskType string, level uint, pageSize, pageIndex uint) ([]model.Task, error) {
+	ctx, cancel := context.WithTimeout(reqCtx, s.timeout)
+	defer cancel()
+
+	var (
+		tasks []model.Task
+		err   error
+	)
+
+	tasks, err = s.cash.GetTasks(ctx, getKeyForBests(taskType, level))
+	if err == nil {
+		start := pageSize * (pageIndex - 1)
+		return tasks[start:min(start+pageSize, uint(len(tasks)))], nil
+	}
+
+	tasks, err = s.cash.GetTasks(ctx, getKey(taskType, level))
+	if err != nil {
+		tasks, err = s.repo.GetTasksByTypeAndLevel(ctx, taskType, level)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tasks = sortTasksByLikes(tasks)
+
+	start := pageSize * (pageIndex - 1)
+	return tasks[start:min(start+pageSize, uint(len(tasks)))], nil
+}
+
 func getKey(taskType string, level uint) string {
 	return fmt.Sprintf("%s:%d", taskType, level)
 }
@@ -191,4 +220,34 @@ func getRandomFromArr[T any](arr []T) T {
 	randomIndex := rand.Intn(len(arr) - 1)
 
 	return arr[randomIndex]
+}
+
+func getKeyForBests(taskType string, level uint) string {
+	return fmt.Sprintf("sorted:%s:%d", taskType, level)
+}
+
+func sortTasksByLikes(tasks []model.Task) []model.Task {
+	if len(tasks) <= 1 {
+		return tasks
+	}
+
+	pivot := tasks[len(tasks)/2].Likes
+	left := []model.Task{}
+	right := []model.Task{}
+	middle := []model.Task{}
+
+	for _, x := range tasks {
+		if x.Likes < pivot {
+			left = append(left, x)
+		} else if x.Likes == pivot {
+			middle = append(middle, x)
+		} else {
+			right = append(right, x)
+		}
+	}
+
+	left = sortTasksByLikes(left)
+	right = sortTasksByLikes(right)
+
+	return append(append(left, middle...), right...)
 }
