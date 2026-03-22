@@ -60,7 +60,7 @@ func (c *Cash) SetTask(ctx context.Context, key string, task *model.Task) error 
 }
 
 func (c *Cash) SetTasks(ctx context.Context, key string, tasks []model.Task) error {
-	if tasks == nil || len(tasks) == 0 {
+	if tasks == nil {
 		return ErrEmptyTask
 	}
 
