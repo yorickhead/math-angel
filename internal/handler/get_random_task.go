@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v5"
+	"github.com/osamikoyo/math-angel/internal/repository"
 )
 
 func (h *Handler) GetRandomTask(c *echo.Context) error {
@@ -18,6 +20,10 @@ func (h *Handler) GetRandomTask(c *echo.Context) error {
 
 	task, err := h.service.GetRandomTask(c.Request().Context(), taskType, uint(level))
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return c.String(http.StatusNotFound, err.Error())
+		}
+
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 
