@@ -1,0 +1,11 @@
+package errors
+
+import "errors"
+
+var (
+	ErrEmptyTask    = errors.New("empty task")
+	ErrAlreadyExist = errors.New("task already exist")
+	ErrUnknown      = errors.New("unknown error")
+	ErrNotFound     = errors.New("not found")
+	ErrBadUID = errors.New("bad uid")
+)
