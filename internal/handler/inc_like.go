@@ -4,13 +4,21 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v5"
+	"github.com/osamikoyo/math-angel/internal/errors"
 )
 
 func (h *Handler) IncLike(c *echo.Context) error {
 	id := c.Param("id")
 
 	if err := h.service.IncLike(c.Request().Context(), id); err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
+		switch err {
+		case errors.ErrBadUID:
+			return c.String(http.StatusBadRequest, err.Error())
+		case errors.ErrNotFound:
+			return c.String(http.StatusNotFound, err.Error())
+		default:
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
 	}
 
 	return c.String(http.StatusOK, "success")
