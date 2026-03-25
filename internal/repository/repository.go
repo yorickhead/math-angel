@@ -3,19 +3,13 @@ package repository
 import (
 	"context"
 	"errors"
+	selferrors "github.com/osamikoyo/math-angel/internal/errors"
 
 	"github.com/google/uuid"
 	"github.com/osamikoyo/math-angel/internal/model"
 	"github.com/osamikoyo/math-angel/pkg/logger"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrEmptyTask    = errors.New("empty task")
-	ErrAlreadyExist = errors.New("task already exist")
-	ErrUnknown      = errors.New("unknown error")
-	ErrNotFound     = errors.New("not found")
 )
 
 type Repository struct {
@@ -32,7 +26,7 @@ func NewRepository(db *gorm.DB, logger *logger.Logger) *Repository {
 
 func (r *Repository) CreateTask(ctx context.Context, task *model.Task) error {
 	if task == nil {
-		return ErrEmptyTask
+		return selferrors.ErrEmptyTask
 	}
 
 	err := gorm.G[model.Task](r.db).Create(ctx, task)
@@ -42,10 +36,10 @@ func (r *Repository) CreateTask(ctx context.Context, task *model.Task) error {
 			zap.Error(err))
 
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return ErrAlreadyExist
+			return selferrors.ErrAlreadyExist
 		}
 
-		return ErrUnknown
+		return selferrors.ErrUnknown
 	}
 
 	r.logger.Info("task created successfully",
@@ -60,7 +54,7 @@ func (r *Repository) UpdateTask(ctx context.Context, id uuid.UUID, column string
 		r.logger.Error("not found task",
 			zap.String("id", id.String()))
 
-		return ErrNotFound
+		return selferrors.ErrNotFound
 	}
 
 	if err != nil {
@@ -69,7 +63,7 @@ func (r *Repository) UpdateTask(ctx context.Context, id uuid.UUID, column string
 			zap.Any("value", value),
 			zap.Error(err))
 
-		return ErrUnknown
+		return selferrors.ErrUnknown
 	}
 
 	r.logger.Info("task updated successfully",
@@ -86,7 +80,7 @@ func (r *Repository) GetTasksByTypeAndLevel(ctx context.Context, taskType string
 			zap.String("type", taskType),
 			zap.Uint("level", level))
 
-		return nil, ErrNotFound
+		return nil, selferrors.ErrNotFound
 	}
 	if err != nil {
 		r.logger.Error("failed get tasks",
@@ -94,7 +88,7 @@ func (r *Repository) GetTasksByTypeAndLevel(ctx context.Context, taskType string
 			zap.Uint("level", level),
 			zap.Error(err))
 
-		return nil, ErrUnknown
+		return nil, selferrors.ErrUnknown
 	}
 
 	r.logger.Info("tasks was successfully fetched")
@@ -110,10 +104,10 @@ func (r *Repository) GetTask(ctx context.Context, id uuid.UUID) (*model.Task, er
 			zap.Error(err))
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotFound
+			return nil, selferrors.ErrNotFound
 		}
 
-		return nil, ErrUnknown
+		return nil, selferrors.ErrUnknown
 	}
 
 	r.logger.Info("task fetched successfully",
