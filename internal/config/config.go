@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -11,12 +12,14 @@ import (
 type Config struct {
 	Addr     string   `mapstructure:"addr"`
 	DBpath   string   `mapstructure:"db_path"`
+	Timeout time.Duration `mapstructure:"timeout"`
 	Redis    Redis    `mapstructure:"redis"`
 	Importer Importer `mapstrcucture:"import"`
 }
 
 type Redis struct {
 	Addr string `mapstructure:"addr"`
+	ExpTime time.Duration `mapstructure:"exp_time"`
 }
 
 type Importer struct {
@@ -36,8 +39,10 @@ func LoadConfig(path string) (*Config, error) {
 	v.SetDefault("app.addr", "localhost:8080")
 	v.SetDefault("app.do_import", false)
 	v.SetDefault("app.db_path", "storage/database.db")
+	v.SetDefault("app.timeout", 30 * time.Second)
 
 	v.SetDefault("app.redis.addr", "localhost:7079")
+	v.SetDefault("app.redis.exp_time", 15 * time.Minute)
 
 	v.SetDefault("app.importer.enabled", false)
 	v.SetDefault("app.importer.file", "math-source/main_train.jsonl")
