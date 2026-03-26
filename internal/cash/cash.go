@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/osamikoyo/math-angel/internal/model"
+	"github.com/osamikoyo/math-angel/internal/service"
 	"github.com/osamikoyo/math-angel/pkg/logger"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -24,6 +25,8 @@ type Cash struct {
 	logger     *logger.Logger
 	defaultExp time.Duration
 }
+
+var _ service.Cash = &Cash{}
 
 func NewCash(client *redis.Client, logger *logger.Logger, defaultExp time.Duration) *Cash {
 	return &Cash{
