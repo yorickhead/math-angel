@@ -1,13 +1,16 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/labstack/echo/v5"
 	"github.com/osamikoyo/math-angel/internal/cash"
 	"github.com/osamikoyo/math-angel/internal/config"
+	"github.com/osamikoyo/math-angel/internal/handler"
 	"github.com/osamikoyo/math-angel/internal/importer"
 	"github.com/osamikoyo/math-angel/internal/repository"
+	"github.com/osamikoyo/math-angel/internal/service"
 	"github.com/osamikoyo/math-angel/pkg/logger"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -29,9 +32,29 @@ func SetupApp(configPath string) (*App, error) {
 	}
 
 	repo, err := setupRepo(logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	cash, err := setupCash(logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	service := service.NewService(repo, cash, cfg.Timeout)
+	importer, err := setupImporter(service, logger, cfg)
 	if err != nil{
 		return nil, err
 	}
+
+	echo := setupEcho(service, logger)
+
+	return &App{
+		echo: echo,
+		cfg: cfg,
+		importer: importer,
+		logger: logger,
+	}, nil
 }
 
 func setupCfgAndLogger(configPath string) (*config.Config, *logger.Logger, error) {
@@ -72,5 +95,49 @@ func setupRepo(logger *logger.Logger, cfg *config.Config) (*repository.Repositor
 }
 
 func setupCash(logger *logger.Logger, cfg *config.Config) (*cash.Cash, error) {
-	client := redis.NewClient()
+	client := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Addr,
+		Password: "",
+		DB:       0,
+		Protocol: 2,
+	})
+
+	err := client.Ping(context.Background()).Err()
+	if err != nil {
+		logger.Error("failed connect to cash",
+			zap.String("addr", cfg.Redis.Addr),
+			zap.Error(err))
+
+		return nil, fmt.Errorf("failed connect to cash: %w", err)
+	}
+
+	logger.Info("cash setupped successfully")
+
+	return cash.NewCash(client, logger, cfg.Redis.ExpTime), nil
+}
+
+func setupImporter(service *service.Service, logger *logger.Logger, cfg *config.Config) (*importer.Importer, error) {
+	importer, err := importer.NewImporter(service, cfg, logger)
+	if err != nil {
+		logger.Error("failed setup importer",
+			zap.Error(err))
+
+		return nil, fmt.Errorf("failed setup importer: %w", err)
+	}
+
+	logger.Info("importer setupped successfully")
+
+	return importer, nil
+}
+
+func setupEcho(service *service.Service, logger *logger.Logger) *echo.Echo {
+	e := echo.New()
+
+	handler := handler.NewHandler(service)
+
+	handler.RegisterRouters(e)
+
+	logger.Info("echo setupped successfully")
+
+	return e
 }
