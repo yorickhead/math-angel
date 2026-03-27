@@ -1,0 +1,22 @@
+{
+  "name": "web",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "@types/bun": "latest",
+    "autoprefixer": "^10.4.27",
+    "daisyui": "^5.5.19",
+    "htmx.org": "^2.0.8",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "js:build": "bun build ./index.ts --outdir ./static/js --minify",
+    "tailwind:build": "bunx @tailwindcss/cli -i ./main.css -o ./static/css/main.css --minify"
+  }
+}
