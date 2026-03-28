@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sync"
+	// "sync"
 
 	"github.com/osamikoyo/math-angel/internal/config"
 	"github.com/osamikoyo/math-angel/internal/service"
@@ -48,7 +48,7 @@ func NewImporter(service *service.Service, cfg *config.Config, logger *logger.Lo
 func (im *Importer) Start(ctx context.Context) {
 	scanners := bufio.NewScanner(im.source)
 
-	var wg sync.WaitGroup
+	// var wg sync.WaitGroup
 
 	for scanners.Scan() {
 		select {
@@ -56,7 +56,7 @@ func (im *Importer) Start(ctx context.Context) {
 			im.logger.Info("stopping importer...")
 			return
 		default:
-			wg.Go(func() {
+			// wg.Go(func() {
 				im.logger.Info("scan new line...")
 
 				var task Task
@@ -68,14 +68,14 @@ func (im *Importer) Start(ctx context.Context) {
 
 				im.logger.Info("adding parsed task to db...")
 
-				if err := im.service.CreateTask(ctx, task.Type, task.Problem, task.Solution, task.Boxed, task.Level); err != nil {
+				if err := im.service.CreateTask(context.Background(), task.Type, task.Problem, task.Solution, task.Boxed, task.Level); err != nil {
 					im.logger.Error("failed create parsed task",
 						zap.Any("task", task),
 						zap.Error(err))
 				}
-			})
+		//	})
 		}
 	}
 
-	wg.Wait()
+	// wg.Wait()
 }
