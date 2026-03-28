@@ -3,65 +3,54 @@ package config
 import (
 	"fmt"
 	"log"
-	"strings"
+	"os"
 	"time"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Addr     string   `mapstructure:"addr"`
-	DBpath   string   `mapstructure:"db_path"`
-	Timeout time.Duration `mapstructure:"timeout"`
-	Redis    Redis    `mapstructure:"redis"`
-	Importer Importer `mapstrcucture:"import"`
+	Addr     string        `yaml:"addr"`
+	DBpath   string        `yaml:"db_path"`
+	Timeout  time.Duration `yaml:"timeout"`
+	Redis    Redis         `yaml:"redis"`
+	Importer Importer      `yaml:"importer"`
 }
 
 type Redis struct {
-	Addr string `mapstructure:"addr"`
-	ExpTime time.Duration `mapstructure:"exp_time"`
+	Addr    string        `yaml:"addr"`
+	ExpTime time.Duration `yaml:"exp_time"`
 }
 
 type Importer struct {
-	Enabled bool   `mapstructure:"enabled"`
-	File    string `mapstructure:"file"`
+	Enabled bool   `yaml:"enabled"`
+	File    string `yaml:"file"`
 }
 
 func LoadConfig(path string) (*Config, error) {
-	v := viper.New()
-
-	v.SetConfigFile(path)
-
-	v.SetEnvPrefix("APP")
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	v.SetDefault("app.addr", "localhost:8080")
-	v.SetDefault("app.do_import", false)
-	v.SetDefault("app.db_path", "storage/database.db")
-	v.SetDefault("app.timeout", 30 * time.Second)
-
-	v.SetDefault("app.redis.addr", "localhost:6379")
-	v.SetDefault("app.redis.exp_time", 15 * time.Minute)
-
-	v.SetDefault("app.importer.enabled", false)
-	v.SetDefault("app.importer.file", "math-source/test_source.jsonl")
-
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("fatal error reading config file: %w", err)
-		}
-
-		log.Printf("failed found config file, use default values")
+	cfg := &Config{
+		Addr:    "localhost:8080",
+		DBpath:  "storage/database.db",
+		Timeout: 30 * time.Second,
+		Redis: Redis{
+			Addr:    "localhost:6379",
+			ExpTime: 15 * time.Minute,
+		},
+		Importer: Importer{
+			Enabled: false,
+			File:    "math-source/test_source.jsonl",
+		},
 	}
 
-	var cfg Config
-
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed parse config to struct")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("failed to read config file, using defaults: %v", err)
+		return cfg, nil
 	}
 
-	cfg.Addr = "localhost:8080"
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse YAML config: %w", err)
+	}
 
-	return &cfg, nil
+	return cfg, nil
 }
