@@ -14,6 +14,7 @@ import (
 	"github.com/osamikoyo/math-angel/internal/config"
 	"github.com/osamikoyo/math-angel/internal/handler"
 	"github.com/osamikoyo/math-angel/internal/importer"
+	"github.com/osamikoyo/math-angel/internal/model"
 	"github.com/osamikoyo/math-angel/internal/repository"
 	"github.com/osamikoyo/math-angel/internal/service"
 	"github.com/osamikoyo/math-angel/pkg/logger"
@@ -65,11 +66,11 @@ func SetupApp(configPath string) (*App, error) {
 	}
 
 	return &App{
-		echo:    e,
-		httpSrv: httpSrv,
-		cfg:     cfg,
+		echo:     e,
+		httpSrv:  httpSrv,
+		cfg:      cfg,
 		importer: importer,
-		logger:  logger,
+		logger:   logger,
 	}, nil
 }
 
@@ -139,6 +140,14 @@ func setupRepo(logger *logger.Logger, cfg *config.Config) (*repository.Repositor
 		logger.Error("failed connect to db", zap.String("path", cfg.DBpath), zap.Error(err))
 		return nil, fmt.Errorf("failed connect to db: %w", err)
 	}
+
+	if err := db.AutoMigrate(&model.Task{}); err != nil {
+		logger.Error("migration failed",
+			zap.Error(err))
+
+		return nil, fmt.Errorf("failed migrate: %w", err)
+	}
+
 	logger.Info("database connected successfully")
 	return repository.NewRepository(db, logger), nil
 }
