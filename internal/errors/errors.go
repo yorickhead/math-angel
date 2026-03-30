@@ -7,5 +7,5 @@ var (
 	ErrAlreadyExist = errors.New("task already exist")
 	ErrUnknown      = errors.New("unknown error")
 	ErrNotFound     = errors.New("not found")
-	ErrBadUID = errors.New("bad uid")
+	ErrBadUID       = errors.New("bad uid")
 )
