@@ -119,3 +119,4 @@ func (r *Repository) GetTask(ctx context.Context, id uuid.UUID) (*model.Task, er
 
 	return &task, nil
 }
+
