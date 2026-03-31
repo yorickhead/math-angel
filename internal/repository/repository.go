@@ -77,19 +77,44 @@ func (r *Repository) UpdateTask(ctx context.Context, id uuid.UUID, column string
 	return nil
 }
 
-func (r *Repository) GetTasksByTypeAndLevel(ctx context.Context, taskType string, level uint) ([]model.Task, error) {
-	tasks, err := gorm.G[model.Task](r.db).Where("type = ? AND level = ?", taskType, level).Find(ctx)
-	if len(tasks) == 0 {
-		r.logger.Error("not found tasks",
-			zap.String("type", taskType),
-			zap.Uint("level", level))
+func (r *Repository) GetTasksByTypeAndLevel(ctx context.Context, taskType string, level string) ([]model.Task, error) {
+	var (
+		tasks []model.Task
+		err   error
+	)
 
-		return nil, selferrors.ErrNotFound
+	if taskType == "any" {
+		tasks, err = gorm.G[model.Task](r.db).Where("level = ?", taskType, level).Find(ctx)
+		if len(tasks) == 0 {
+			r.logger.Error("not found tasks",
+				zap.String("type", taskType),
+				zap.String("level", level))
+
+			return nil, selferrors.ErrNotFound
+		}
+	} else if level == "any" {
+		tasks, err = gorm.G[model.Task](r.db).Where("level = ?", taskType, level).Find(ctx)
+		if len(tasks) == 0 {
+			r.logger.Error("not found tasks",
+				zap.String("type", taskType),
+				zap.String("level", level))
+
+			return nil, selferrors.ErrNotFound
+		}
+	} else {
+		tasks, err = gorm.G[model.Task](r.db).Where("type = ? AND level = ?", taskType, level).Find(ctx)
+		if len(tasks) == 0 {
+			r.logger.Error("not found tasks",
+				zap.String("type", taskType),
+				zap.String("level", level))
+
+			return nil, selferrors.ErrNotFound
+		}
 	}
 	if err != nil {
 		r.logger.Error("failed get tasks",
 			zap.String("type", taskType),
-			zap.Uint("level", level),
+			zap.String("level", level),
 			zap.Error(err))
 
 		return nil, selferrors.ErrUnknown
@@ -119,4 +144,3 @@ func (r *Repository) GetTask(ctx context.Context, id uuid.UUID) (*model.Task, er
 
 	return &task, nil
 }
-
