@@ -13,7 +13,7 @@ import (
 
 type Repository interface {
 	CreateTask(ctx context.Context, task *model.Task) error
-	GetTasksByTypeAndLevel(ctx context.Context, taskType string, level uint) ([]model.Task, error)
+	GetTasksByTypeAndLevel(ctx context.Context, taskType string, level string) ([]model.Task, error)
 	GetTask(ctx context.Context, id uuid.UUID) (*model.Task, error)
 	UpdateTask(ctx context.Context, id uuid.UUID, column string, value any) error
 }
@@ -34,8 +34,8 @@ type Service struct {
 
 func NewService(repo Repository, cash Cash, timeout time.Duration) *Service {
 	return &Service{
-		repo: repo,
-		cash: cash,
+		repo:    repo,
+		cash:    cash,
 		timeout: timeout,
 	}
 }
@@ -43,9 +43,9 @@ func NewService(repo Repository, cash Cash, timeout time.Duration) *Service {
 func (s *Service) CreateTask(
 	reqCtx context.Context,
 	taskType string,
-	desc string,
-	decision string,
-	rightAnswer string,
+	problem string,
+	solution string,
+	boxed string,
 	level string,
 ) error {
 	ctx, cancel := context.WithTimeout(reqCtx, s.timeout)
@@ -53,9 +53,9 @@ func (s *Service) CreateTask(
 
 	task := model.NewTask(
 		taskType,
-		desc,
-		decision,
-		rightAnswer,
+		problem,
+		solution,
+		boxed,
 		level,
 	)
 
@@ -166,7 +166,7 @@ func (s *Service) DecDislike(reqCtx context.Context, id string) error {
 	return nil
 }
 
-func (s *Service) GetRandomTask(reqCtx context.Context, taskType string, level uint) (*model.Task, error) {
+func (s *Service) GetRandomTask(reqCtx context.Context, taskType string, level string) (*model.Task, error) {
 	ctx, cancel := context.WithTimeout(reqCtx, s.timeout)
 	defer cancel()
 
@@ -220,7 +220,7 @@ func (s *Service) GetTask(reqCtx context.Context, id string) (*model.Task, error
 	return task, nil
 }
 
-func (s *Service) GetBests(reqCtx context.Context, taskType string, level uint, pageSize, pageIndex uint) ([]model.Task, error) {
+func (s *Service) GetBests(reqCtx context.Context, taskType string, level string, pageSize, pageIndex uint) ([]model.Task, error) {
 	ctx, cancel := context.WithTimeout(reqCtx, s.timeout)
 	defer cancel()
 
@@ -232,6 +232,9 @@ func (s *Service) GetBests(reqCtx context.Context, taskType string, level uint, 
 	tasks, err = s.cash.GetTasks(ctx, getKeyForBests(taskType, level))
 	if err == nil {
 		start := pageSize * (pageIndex - 1)
+		if start >= uint(len(tasks)) {
+			return []model.Task{}, nil
+		}
 		return tasks[start:min(start+pageSize, uint(len(tasks)))], nil
 	}
 
@@ -251,8 +254,8 @@ func (s *Service) GetBests(reqCtx context.Context, taskType string, level uint, 
 	return tasks[start:min(start+pageSize, uint(len(tasks)))], nil
 }
 
-func getKeyForMany(taskType string, level uint) string {
-	return fmt.Sprintf("%s:%d", taskType, level)
+func getKeyForMany(taskType string, level string) string {
+	return fmt.Sprintf("%s:%s", taskType, level)
 }
 
 func getKeyForOne(key string) string {
@@ -260,13 +263,17 @@ func getKeyForOne(key string) string {
 }
 
 func getRandomFromArr[T any](arr []T) T {
-	randomIndex := rand.Intn(len(arr) - 1)
+	if len(arr) == 0 {
+		panic("getRandomFromArr: empty slice")
+	}
+
+	randomIndex := rand.Intn(len(arr))
 
 	return arr[randomIndex]
 }
 
-func getKeyForBests(taskType string, level uint) string {
-	return fmt.Sprintf("sorted:%s:%d", taskType, level)
+func getKeyForBests(taskType string, level string) string {
+	return fmt.Sprintf("sorted:%s:%s", taskType, level)
 }
 
 func sortTasksByLikes(tasks []model.Task) []model.Task {
