@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"unicode"
+
 	// "sync"
 
 	"github.com/osamikoyo/math-angel/internal/config"
@@ -57,25 +59,36 @@ func (im *Importer) Start(ctx context.Context) {
 			return
 		default:
 			// wg.Go(func() {
-				im.logger.Info("scan new line...")
+			im.logger.Info("scan new line...")
 
-				var task Task
+			var task Task
 
-				if err := json.Unmarshal(scanners.Bytes(), &task); err != nil {
-					im.logger.Error("failed unmarshal task",
-						zap.Error(err))
-				}
+			if err := json.Unmarshal(scanners.Bytes(), &task); err != nil {
+				im.logger.Error("failed unmarshal task",
+					zap.Error(err))
+			}
 
-				im.logger.Info("adding parsed task to db...")
+			im.logger.Info("adding parsed task to db...")
 
-				if err := im.service.CreateTask(context.Background(), task.Type, task.Problem, task.Solution, task.Boxed, task.Level); err != nil {
-					im.logger.Error("failed create parsed task",
-						zap.Any("task", task),
-						zap.Error(err))
-				}
-		//	})
+			task.Type = firstToLower(task.Type)
+			
+
+			if err := im.service.CreateTask(context.Background(), task.Type, task.Problem, task.Solution, task.Boxed, task.Level); err != nil {
+				im.logger.Error("failed create parsed task",
+					zap.Any("task", task),
+					zap.Error(err))
+			}
+			//	})
 		}
 	}
 
 	// wg.Wait()
+}
+
+func firstToLower(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	return string(append([]rune{unicode.ToLower(r[0])}, r[1:]...))
 }
