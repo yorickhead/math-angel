@@ -2,3 +2,10 @@
 @plugin "daisyui" {
   themes: all;
 }
+
+.type-btn.active,
+.level-btn.active {
+    border-color: rgb(168 85 247) !important;
+    background-color: rgb(30 30 40) !important;
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+}
