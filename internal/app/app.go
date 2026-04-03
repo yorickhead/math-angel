@@ -38,6 +38,9 @@ func SetupApp(configPath string) (*App, error) {
 		return nil, err
 	}
 
+	logger.Info("configuration and logger initialized successfully",
+		zap.Any("cfg", cfg))
+
 	repo, err := setupRepo(logger, cfg)
 	if err != nil {
 		return nil, err
