@@ -28,29 +28,53 @@ type Importer struct {
 }
 
 func LoadConfig(path string) (*Config, error) {
-	cfg := &Config{
-		Addr:    "localhost:8080",
-		DBpath:  "storage/database.db",
-		Timeout: 30 * time.Second,
-		Redis: Redis{
-			Addr:    "localhost:6379",
-			ExpTime: 15 * time.Minute,
-		},
-		Importer: Importer{
-			Enabled: false,
-			File:    "math-source/test_source.jsonl",
-		},
-	}
+    log.Println("loading config")
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("failed to read config file, using defaults: %v", err)
-		return cfg, nil
-	}
+    cfg := &Config{
+        Addr:    "localhost:8080",
+        DBpath:  "storage/database.db",
+        Timeout: 30 * time.Second,
+        Redis: Redis{
+            Addr:    "localhost:6379",
+            ExpTime: 15 * time.Minute,
+        },
+        Importer: Importer{
+            Enabled: false,
+            File:    "math-source/test_source.jsonl",
+        },
+    }
 
-	if err := yaml.Unmarshal(data, cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML config: %w", err)
-	}
+    if path == "" {
+        log.Println("config path is empty, using default config")
+        return cfg, nil
+    }
 
-	return cfg, nil
+    data, err := os.ReadFile(path)
+    if err != nil {
+        if os.IsNotExist(err) {
+            log.Printf("config file not found: %s, using default", path)
+        } else {
+            log.Printf("failed to read config file: %v, using default", err)
+        }
+        return cfg, nil
+    }
+
+    var newCfg Config
+    if err := yaml.Unmarshal(data, &newCfg); err != nil {
+        return nil, fmt.Errorf("failed to parse YAML config: %w", err)
+    }
+
+    log.Println("config loaded from file successfully")
+    return &newCfg, nil
+}
+
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }
