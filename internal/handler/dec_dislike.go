@@ -10,7 +10,7 @@ import (
 func (h *Handler) DecDislike(c *echo.Context) error {
 	id := c.Param("id")
 
-	if err := h.service.DecDislike(c.Request().Context(), id);err != nil{
+	if err := h.service.DecDislike(c.Request().Context(), id); err != nil {
 		switch err {
 		case errors.ErrBadUID:
 			return c.String(http.StatusBadRequest, err.Error())
