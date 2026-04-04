@@ -24,14 +24,16 @@ import (
 	"gorm.io/gorm"
 )
 
+// App represents the main application containing the HTTP server, configuration, and dependencies.
 type App struct {
-	echo     *echo.Echo
-	httpSrv  *http.Server
-	cfg      *config.Config
-	importer *importer.Importer
-	logger   *logger.Logger
+	echo     *echo.Echo         // Echo framework for handling HTTP requests
+	httpSrv  *http.Server       // HTTP server
+	cfg      *config.Config     // Application configuration
+	importer *importer.Importer // Data importer (if enabled)
+	logger   *logger.Logger     // Logger for recording events
 }
 
+// SetupApp initializes the application by setting up configuration, logger, repository, cache, and other components.
 func SetupApp(configPath string) (*App, error) {
 	cfg, logger, err := setupCfgAndLogger(configPath)
 	if err != nil {
@@ -77,6 +79,7 @@ func SetupApp(configPath string) (*App, error) {
 	}, nil
 }
 
+// Run starts the application, including the HTTP server and importer, and handles shutdown signals.
 func (a *App) Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(),
 		os.Interrupt,
@@ -112,6 +115,7 @@ func (a *App) Run() error {
 	return nil
 }
 
+// shutdown gracefully shuts down the HTTP server.
 func (a *App) shutdown(ctx context.Context) error {
 	if err := a.httpSrv.Shutdown(ctx); err != nil {
 		a.logger.Error("http server shutdown error", zap.Error(err))
@@ -120,6 +124,7 @@ func (a *App) shutdown(ctx context.Context) error {
 	return nil
 }
 
+// setupCfgAndLogger loads the configuration and initializes the logger.
 func setupCfgAndLogger(configPath string) (*config.Config, *logger.Logger, error) {
 	logger.Init(logger.Config{
 		AppName:   "math-angel",
@@ -137,6 +142,7 @@ func setupCfgAndLogger(configPath string) (*config.Config, *logger.Logger, error
 	return cfg, l, nil
 }
 
+// setupRepo connects to the database and performs migrations.
 func setupRepo(logger *logger.Logger, cfg *config.Config) (*repository.Repository, error) {
 	db, err := gorm.Open(sqlite.Open(cfg.DBpath))
 	if err != nil {
@@ -155,6 +161,7 @@ func setupRepo(logger *logger.Logger, cfg *config.Config) (*repository.Repositor
 	return repository.NewRepository(db, logger), nil
 }
 
+// setupCache connects to Redis for caching.
 func setupCache(logger *logger.Logger, cfg *config.Config) (*cash.Cash, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Redis.Addr,
@@ -172,6 +179,7 @@ func setupCache(logger *logger.Logger, cfg *config.Config) (*cash.Cash, error) {
 	return cash.NewCash(client, logger, cfg.Redis.ExpTime), nil
 }
 
+// setupImporter initializes the data importer.
 func setupImporter(service *service.Service, logger *logger.Logger, cfg *config.Config) (*importer.Importer, error) {
 	importer, err := importer.NewImporter(service, cfg, logger)
 	if err != nil {
@@ -182,6 +190,7 @@ func setupImporter(service *service.Service, logger *logger.Logger, cfg *config.
 	return importer, nil
 }
 
+// setupEcho configures the Echo framework with routes.
 func setupEcho(service *service.Service, logger *logger.Logger) *echo.Echo {
 	e := echo.New()
 	handler := handler.NewHandler(service)
