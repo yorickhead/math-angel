@@ -3,29 +3,33 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/labstack/echo/v5"
 	selferrors "github.com/osamikoyo/math-angel/internal/errors"
+	"github.com/osamikoyo/math-angel/internal/ui/pages"
 )
 
 func (h *Handler) GetRandomTask(c *echo.Context) error {
-	levelStr := c.Param("level")
+	level := c.Param("level")
 	taskType := c.Param("type")
 
-	level, err := strconv.Atoi(levelStr)
+	task, err := h.service.GetRandomTask(c.Request().Context(), taskType, level)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "level must be number")
-	}
-
-	task, err := h.service.GetRandomTask(c.Request().Context(), taskType, uint(level))
-	if err != nil {
-		if errors.Is(err, selferrors.ErrNotFound ) {
+		if errors.Is(err, selferrors.ErrNotFound) {
 			return c.String(http.StatusNotFound, err.Error())
 		}
 
 		return c.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, task)
+	return renderWithStatus(c, http.StatusOK, pages.TaskPage(&pages.Task{
+		ID:       task.ID.String(),
+		Type:     task.Type,
+		Boxed:    task.Boxed,
+		Level:    task.Level,
+		Solution: task.Solution,
+		Problem:  task.Problem,
+		Likes:    int(task.Likes),
+		Dislikes: int(task.Dislikes),
+	}))
 }
