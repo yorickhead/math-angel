@@ -92,27 +92,38 @@ func (a *App) Run() error {
 		a.importer.Start(ctx)
 	}
 
+	errs := make(chan error, 1)
+
 	go func() {
 		a.logger.Info("starting server", zap.String("addr", a.cfg.Addr))
 
 		if err := a.httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			a.logger.Error("server error", zap.Error(err))
+
+			errs <- fmt.Errorf("server error: %w", err)
 		}
 	}()
 
-	<-ctx.Done()
-	a.logger.Info("received shutdown signal, gracefully stopping...")
+	select {
+	case <-ctx.Done():
+		// Shutdown signal received, proceed to graceful shutdown
+		a.logger.Info("received shutdown signal, gracefully stopping...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
-	if err := a.shutdown(shutdownCtx); err != nil {
-		a.logger.Error("graceful shutdown failed", zap.Error(err))
+		if err := a.shutdown(shutdownCtx); err != nil {
+			a.logger.Error("graceful shutdown failed", zap.Error(err))
+			return err
+		}
+
+		a.logger.Info("server stopped gracefully")
+
+		return nil
+	case err := <-errs:
+		a.logger.Error("server error", zap.Error(err))
 		return err
 	}
-
-	a.logger.Info("server stopped gracefully")
-	return nil
 }
 
 // shutdown gracefully shuts down the HTTP server.
