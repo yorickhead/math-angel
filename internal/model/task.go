@@ -15,11 +15,11 @@ type Task struct {
 
 func NewTask(taskType, problem, solution, boxed, level string) *Task {
 	return &Task{
-		ID:          uuid.New(),
-		Type:        taskType,
-		Solution:    solution,
-		Problem: problem,
-		Boxed: boxed,
-		Level:       level,
+		ID:       uuid.New(),
+		Type:     taskType,
+		Solution: solution,
+		Problem:  problem,
+		Boxed:    boxed,
+		Level:    level,
 	}
 }
