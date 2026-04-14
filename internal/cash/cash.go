@@ -71,7 +71,7 @@ func (c *Cash) SetTasks(ctx context.Context, key string, tasks []model.Task) err
 		return ErrEmptyTask
 	}
 
-	c.logger.Error("set tasks",
+	c.logger.Info("set tasks",
 		zap.String("key", key))
 
 	data, err := json.Marshal(tasks)
