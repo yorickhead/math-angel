@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 
 	"github.com/a-h/templ"
 	"github.com/osamikoyo/math-angel/internal/service"
@@ -26,7 +27,7 @@ func (h *Handler) RegisterRouters(e *echo.Echo) {
 
 	e.Static("/static", "static")
 
-	taskGroup := e.Group("/task")
+	taskGroup := e.Group("/task", middleware.RequestLogger())
 
 	taskGroup.POST("/inc/like/:id", h.IncLike)
 	taskGroup.POST("/dec/like/:id", h.DecLike)
