@@ -61,7 +61,7 @@ func (r *Repository) UpdateTask(ctx context.Context, id uuid.UUID, column string
 		zap.String("column", column),
 		zap.Any("value", value))
 
-	rows, err := gorm.G[model.Task](r.db).Update(ctx, column, value)
+	rows, err := gorm.G[model.Task](r.db).Where("id = ?", id).Update(ctx, column, value)
 	if rows == 0 {
 		r.logger.Error("not found task",
 			zap.String("id", id.String()))
