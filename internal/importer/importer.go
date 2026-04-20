@@ -6,9 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"unicode"
-
-	// "sync"
 
 	"github.com/osamikoyo/math-angel/internal/config"
 	"github.com/osamikoyo/math-angel/internal/service"
@@ -50,7 +49,7 @@ func NewImporter(service *service.Service, cfg *config.Config, logger *logger.Lo
 func (im *Importer) Start(ctx context.Context) {
 	scanners := bufio.NewScanner(im.source)
 
-	// var wg sync.WaitGroup
+	var wg sync.WaitGroup
 
 	for scanners.Scan() {
 		select {
@@ -58,45 +57,45 @@ func (im *Importer) Start(ctx context.Context) {
 			im.logger.Info("stopping importer...")
 			return
 		default:
-			// wg.Go(func() {
-			im.logger.Info("scan new line...")
+			wg.Go(func() {
+				im.logger.Info("scan new line...")
 
-			var task Task
+				var task Task
 
-			if err := json.Unmarshal(scanners.Bytes(), &task); err != nil {
-				im.logger.Error("failed unmarshal task",
-					zap.Error(err))
-			}
+				if err := json.Unmarshal(scanners.Bytes(), &task); err != nil {
+					im.logger.Error("failed unmarshal task",
+						zap.Error(err))
+				}
 
-			im.logger.Info("adding parsed task to db...")
+				im.logger.Info("adding parsed task to db...")
 
-			task.Type = firstToLower(task.Type)
+				task.Type = firstToLower(task.Type)
 
-			level := ""
+				level := ""
 
-			switch task.Level {
-			case "Level 5":
-				level = "hard"
-			case "Level 4", "Level 3":
-				level = "medium"
-			case "Level 2", "Level 1":
-				level = "easy"
-			default:
-				im.logger.Warn("unknown task level",
-					zap.String("level", task.Level))
-				level = "unknown"
-			}
+				switch task.Level {
+				case "Level 5":
+					level = "hard"
+				case "Level 4", "Level 3":
+					level = "medium"
+				case "Level 2", "Level 1":
+					level = "easy"
+				default:
+					im.logger.Warn("unknown task level",
+						zap.String("level", task.Level))
+					level = "unknown"
+				}
 
-			if err := im.service.CreateTask(context.Background(), task.Type, task.Problem, task.Solution, task.Boxed, level); err != nil {
-				im.logger.Error("failed create parsed task",
-					zap.Any("task", task),
-					zap.Error(err))
-			}
-			//	})
+				if err := im.service.CreateTask(context.Background(), task.Type, task.Problem, task.Solution, task.Boxed, level); err != nil {
+					im.logger.Error("failed create parsed task",
+						zap.Any("task", task),
+						zap.Error(err))
+				}
+			})
 		}
 	}
 
-	// wg.Wait()
+	wg.Wait()
 }
 
 func firstToLower(s string) string {
