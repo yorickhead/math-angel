@@ -35,6 +35,7 @@ func (h *Handler) RegisterRouters(e *echo.Echo) {
 	e.GET("/", h.pages.Home)
 	e.GET("/train", h.pages.StartTrain)
 	e.GET("/bests", h.pages.GetInvitationForBests)
+	e.GET("/add", h.pages.AddTaskPage)
 
 	e.Static("/static", "static")
 
