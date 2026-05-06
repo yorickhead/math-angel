@@ -10,29 +10,29 @@ import (
 )
 
 func (h *Handler) AddTask(c *echo.Context) error {
-    var req struct {
-        Type     string `form:"type"`
-        Problem  string `form:"problem"`
-        Solution string `form:"solution"`
-        Boxed    string `form:"boxed"`
-        Level    string `form:"level"`
-    }
+	var req struct {
+		Type     string `form:"type"`
+		Problem  string `form:"problem"`
+		Solution string `form:"solution"`
+		Boxed    string `form:"boxed"`
+		Level    string `form:"level"`
+	}
 
-    if err := c.Bind(&req); err != nil {
-        return renderWithStatus(c, http.StatusBadRequest, 
-            pages.ResultMessage("Error in form data", true))
-    }
+	if err := c.Bind(&req); err != nil {
+		return renderWithStatus(c, http.StatusBadRequest,
+			pages.ResultMessage("Error in form data", true))
+	}
 
-    err := h.service.CreateTask(c.Request().Context(), req.Type, req.Problem, req.Solution, req.Boxed, req.Level)
-    if err != nil {
-        if errors.Is(err, selferrors.ErrAlreadyExist) {
-            return renderWithStatus(c, http.StatusBadRequest, 
-                pages.ResultMessage("Already exist", true))
-        }
-        return renderWithStatus(c, http.StatusInternalServerError, 
-            pages.ResultMessage("Internal server error", true))
-    }
+	err := h.service.CreateTask(c.Request().Context(), req.Type, req.Problem, req.Solution, req.Boxed, req.Level)
+	if err != nil {
+		if errors.Is(err, selferrors.ErrAlreadyExist) {
+			return renderWithStatus(c, http.StatusBadRequest,
+				pages.ResultMessage("Already exist", true))
+		}
+		return renderWithStatus(c, http.StatusInternalServerError,
+			pages.ResultMessage("Internal server error", true))
+	}
 
-    return renderWithStatus(c, http.StatusOK, 
-        pages.ResultMessage("Task was successfully added", false))
+	return renderWithStatus(c, http.StatusOK,
+		pages.ResultMessage("Task was successfully added", false))
 }
