@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/osamikoyo/math-angel/internal/errors"
+	"github.com/osamikoyo/math-angel/internal/ui/pages"
 )
 
 func (h *Handler) DecLike(c *echo.Context) error {
@@ -21,5 +22,13 @@ func (h *Handler) DecLike(c *echo.Context) error {
 		}
 	}
 
-	return c.String(http.StatusOK, "success")
+	task, err := h.service.GetTask(c.Request().Context(), id)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "error")
+	}
+
+	return renderWithStatus(c, http.StatusOK, pages.DislikeGroup(&pages.Task{
+		ID:    task.ID.String(),
+		Likes: int(task.Likes),
+	}))
 }
