@@ -30,7 +30,7 @@ func renderWithStatus(c *echo.Context, status int, component templ.Component) er
 func (h *Handler) RegisterRouters(e *echo.Echo) {
 	e.GET("/healthcheck", h.HealthCheck)
 
-	//page handlers
+	// page handlers
 
 	e.GET("/", h.pages.Home)
 	e.GET("/train", h.pages.StartTrain)
