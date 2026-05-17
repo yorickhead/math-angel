@@ -168,6 +168,12 @@ func setupRepo(logger *logger.Logger, cfg *config.Config) (*repository.Repositor
 		return nil, fmt.Errorf("failed migrate: %w", err)
 	}
 
+	// === FTS5 SETUP ===
+	if err := setupFTS5(db, logger); err != nil {
+		logger.Error("FTS5 setup failed", zap.Error(err))
+		return nil, fmt.Errorf("failed setup FTS5: %w", err)
+	}
+
 	logger.Info("database connected successfully")
 	return repository.NewRepository(db, logger), nil
 }
@@ -209,4 +215,52 @@ func setupEcho(service *service.Service, logger *logger.Logger) *echo.Echo {
 
 	logger.Info("echo configured successfully")
 	return e
+}
+
+func setupFTS5(db *gorm.DB, logger *logger.Logger) error {
+	ftsSQL := `
+		CREATE VIRTUAL TABLE IF NOT EXISTS tasks_fts USING fts5(         
+			problem,
+			solution,
+			tokenize='unicode61 remove_diacritics 0',
+			content='tasks',
+			content_rowid='id'
+		);
+	`
+	if err := db.Exec(ftsSQL).Error; err != nil {
+		return err
+	}
+
+	triggers := []string{
+		// AFTER INSERT
+		`CREATE TRIGGER IF NOT EXISTS tasks_ai AFTER INSERT ON tasks
+		 BEGIN
+			INSERT INTO tasks_fts(rowid, problem, solution)
+			VALUES (new.id, new.problem, new.solution);
+		 END;`,
+
+		// AFTER UPDATE
+		`CREATE TRIGGER IF NOT EXISTS tasks_au AFTER UPDATE ON tasks
+		 BEGIN
+			UPDATE tasks_fts SET 
+				problem = new.problem,
+				solution = new.solution
+			WHERE rowid = new.id;
+		 END;`,
+
+		// AFTER DELETE
+		`CREATE TRIGGER IF NOT EXISTS tasks_ad AFTER DELETE ON tasks
+		 BEGIN
+			DELETE FROM tasks_fts WHERE rowid = old.id;
+		 END;`,
+	}
+
+	for _, trig := range triggers {
+		if err := db.Exec(trig).Error; err != nil {
+			logger.Warn("failed to create trigger", zap.Error(err))
+		}
+	}
+
+	logger.Info("FTS5 virtual table and triggers created successfully")
+	return nil
 }
