@@ -27,7 +27,7 @@ func (h *Handler) IncDislike(c *echo.Context) error {
 		return c.String(http.StatusInternalServerError, "error")
 	}
 
-	return renderWithStatus(c, http.StatusOK, pages.LikeGroup(&pages.Task{
+	return renderWithStatus(c, http.StatusOK, pages.DislikeGroup(&pages.Task{
 		ID:    task.ID.String(),
 		Likes: int(task.Likes),
 	}))
