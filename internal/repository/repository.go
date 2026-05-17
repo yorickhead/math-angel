@@ -150,3 +150,40 @@ func (r *Repository) GetTask(ctx context.Context, id uuid.UUID) (*model.Task, er
 
 	return &task, nil
 }
+
+func (r *Repository) SearchTasks(ctx context.Context, query string, limit, offset int) ([]model.TaskSearchResult, error) {
+	if query == "" {
+		return nil, selferrors.ErrEmptyQuery
+	}
+
+	r.logger.Info("searching tasks",
+		zap.String("query", query),
+		zap.Int("limit", limit),
+		zap.Int("offset", offset))
+
+	var results []model.TaskSearchResult
+
+	err := r.db.Raw(`
+		SELECT 
+			t.*,
+			snippet(tasks_fts, -1, '<b>', '</b>', '...', 64) as snippet,
+			bm25(tasks_fts) as rank
+		FROM tasks t
+		JOIN tasks_fts f ON t.id = f.rowid
+		WHERE tasks_fts MATCH ?
+		ORDER BY rank DESC
+		LIMIT ? OFFSET ?
+	`, query, limit, offset).Scan(&results).Error
+
+	if err != nil {
+		r.logger.Error("search failed",
+			zap.String("query", query),
+			zap.Error(err))
+		return nil, selferrors.ErrUnknown
+	}
+
+	r.logger.Info("search completed",
+		zap.Int("found", len(results)))
+
+	return results, nil
+}
