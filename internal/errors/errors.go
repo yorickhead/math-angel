@@ -8,4 +8,6 @@ var (
 	ErrUnknown      = errors.New("unknown error")
 	ErrNotFound     = errors.New("not found")
 	ErrBadUID       = errors.New("bad uid")
+
+	ErrEmptyQuery = errors.New("empty query")
 )
